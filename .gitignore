@@ -1,1 +1,104 @@
-/target
+# ── Rust ──────────────────────────────────────────────────────────────
+/target/
+**/*.rs.bk
+*.pdb
+
+# Note: Cargo.lock IS committed for binaries (this is a binary crate).
+# Do not ignore it — it pins dependency versions for reproducible builds.
+
+# ── Cushion ───────────────────────────────────────────────────────────
+# IMPORTANT: .cushion.toml and .cushion/ledger.jsonl SHOULD be committed.
+# The ledger is the shared team budget — committing it makes the cushion
+# tamper-evident across the whole team and prevents local "refunds".
+#
+# However, during development of Cushion itself, local runs of `cushion
+# demo` or `cushion check` create throwaway state. Those are ignored below
+# only if you run the tool in its own repo during development.
+#
+# If you use Cushion ON its own repo while developing, uncomment:
+# /.cushion/
+# /.cushion.toml
+
+# Temp files created by `cushion ui` or crash recovery
+.cushion/*.tmp
+.cushion/*.swp
+
+# ── Environment & secrets ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+credentials.*
+
+# ── Editors ───────────────────────────────────────────────────────────
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# JetBrains / IntelliJ / RustRover
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim / Neovim
+*.swp
+*.swo
+*.swn
+.*.sw?
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# Helix
+.helix/
+
+# Zed
+.zed/
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Build & coverage artifacts ────────────────────────────────────────
+*.profraw
+*.profdata
+*.lcov
+coverage/
+tarpaulin-report.*
+/benches/**/target/
+
+# ── Logs ──────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Temporary / scratch ───────────────────────────────────────────────
+*.tmp
+*.bak
+*.orig
+*.rej
+/tmp/
+/scratch/
+
+# ── CI / tooling caches ───────────────────────────────────────────────
+.cargo/
+/sccache/

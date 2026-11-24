@@ -1,0 +1,6 @@
+- id: cushion
+  name: cushion check
+  description: Verify this commit doesn't drain the safety cushion.
+  entry: cushion check --dry-run
+  language: system
+  pass_filenames: false

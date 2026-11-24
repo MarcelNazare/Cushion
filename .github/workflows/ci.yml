@@ -1,0 +1,16 @@
+name: Cushion
+on: [pull_request]
+
+jobs:
+  cushion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Install cushion from your fork (or crates.io once published)
+      - run: cargo install --git https://github.com/MarcelNazare/cushion
+
+      - run: cushion check --dry-run

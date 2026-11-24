@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cushion</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9eef5 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #1e293b;
+  }
+  .card {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 28px;
+    padding: 48px 40px;
+    box-shadow: 0 8px 32px rgba(30, 41, 59, 0.08);
+  }
+  h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .tagline { color: #64748b; margin: 0 0 32px; font-size: 15px; }
+  .ring-wrap { position: relative; width: 220px; height: 220px; margin: 0 auto 32px; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: #e2e8f0; stroke-width: 20; }
+  .ring-fill {
+    fill: none; stroke-width: 20; stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
+  }
+  .ring-text {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .ring-pct { font-size: 44px; font-weight: 700; letter-spacing: -1px; }
+  .ring-sub {
+    font-size: 13px; color: #64748b; margin-top: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .verdict { text-align: center; font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+  .verdict-sub { text-align: center; color: #64748b; font-size: 14px; margin: 0 0 32px; }
+  .green .ring-fill { stroke: #10b981; }
+  .green .verdict { color: #059669; }
+  .yellow .ring-fill { stroke: #f59e0b; }
+  .yellow .verdict { color: #d97706; }
+  .red .ring-fill { stroke: #ef4444; }
+  .red .verdict { color: #dc2626; }
+  h2 { font-size: 16px; font-weight: 600; margin: 32px 0 12px; color: #334155; }
+  .changes { list-style: none; padding: 0; margin: 0; }
+  .change {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 14px;
+    background: #f8fafc; margin-bottom: 8px;
+  }
+  .change-icon { font-size: 20px; }
+  .change-body { flex: 1; }
+  .change-summary { font-size: 14px; font-weight: 500; }
+  .change-time { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .change-cost { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
+  .cost-bad { background: #fee2e2; color: #dc2626; }
+  .cost-good { background: #d1fae5; color: #059669; }
+  .empty { text-align: center; color: #94a3b8; font-size: 14px; padding: 32px 0; }
+  .error {
+    background: #fee2e2; color: #991b1b;
+    padding: 16px; border-radius: 12px;
+    font-size: 14px; margin-bottom: 24px;
+  }
+  .loading { text-align: center; color: #94a3b8; padding: 40px 0; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <h1>Cushion</h1>
+  <p class="tagline">How much security your code has left this month.</p>
+  <div id="error-slot"></div>
+  <div id="content"><div class="loading">Loading…</div></div>
+</div>
+<script>
+async function load() {
+  const res = await fetch('/api/state');
+  const data = await res.json();
+  const content = document.getElementById('content');
+  const errSlot = document.getElementById('error-slot');
+  const card = document.getElementById('card');
+
+  if (!data.ok) {
+    errSlot.innerHTML = `<div class="error">${data.message || 'Setup needed'}</div>`;
+  } else {
+    errSlot.innerHTML = '';
+  }
+  card.className = 'card ' + (data.level || '');
+
+  const pct = Math.max(0, Math.min(100, data.pct_remaining || 0));
+  const circumference = 2 * Math.PI * 90;
+  const dashOffset = circumference * (1 - pct / 100);
+
+  const verdictText =
+    data.level === 'green'  ? "You're safe to make changes" :
+    data.level === 'yellow' ? "Getting close to your limit" :
+    data.level === 'red'    ? "Needs attention before more changes" :
+                              "Waiting for data";
+
+  const verdictSub = data.budget
+    ? `${data.remaining} of ${data.budget} safety points remaining`
+    : '';
+
+  let changesHtml = '';
+  if (data.entries && data.entries.length > 0) {
+    changesHtml = '<h2>Recent changes</h2><ul class="changes">' +
+      data.entries.map(e => {
+        const cost = e.net_cost;
+        const costClass = cost < 0 ? 'cost-bad' : cost > 0 ? 'cost-good' : '';
+        const costLabel = cost === 0 ? '—' : (cost < 0 ? `${cost}` : `+${cost}`);
+        const icon = cost < 0 ? '⚠️' : cost > 0 ? '✅' : '➖';
+        const date = new Date(e.timestamp).toLocaleDateString(undefined,
+          { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        return `<li class="change">
+          <span class="change-icon">${icon}</span>
+          <div class="change-body">
+            <div class="change-summary">${escape(e.summary)}</div>
+            <div class="change-time">${date}</div>
+          </div>
+          <span class="change-cost ${costClass}">${costLabel}</span>
+        </li>`;
+      }).join('') + '</ul>';
+  } else if (data.ok) {
+    changesHtml = '<h2>Recent changes</h2><div class="empty">No changes yet — you\'re starting fresh.</div>';
+  }
+
+  content.innerHTML = `
+    <div class="ring-wrap">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle class="ring-track" cx="110" cy="110" r="90"></circle>
+        <circle class="ring-fill" cx="110" cy="110" r="90"
+          stroke-dasharray="${circumference}"
+          stroke-dashoffset="${dashOffset}"></circle>
+      </svg>
+      <div class="ring-text">
+        <div class="ring-pct">${Math.round(pct)}%</div>
+        <div class="ring-sub">cushion left</div>
+      </div>
+    </div>
+    <p class="verdict">${verdictText}</p>
+    <p class="verdict-sub">${verdictSub}</p>
+    ${changesHtml}
+  `;
+}
+
+function escape(s) {
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>
